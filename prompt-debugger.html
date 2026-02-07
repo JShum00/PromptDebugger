@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Debugger - Learn AI Prompting Through Play</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e27;
+            --bg-medium: #151b3d;
+            --bg-light: #1e2749;
+            --accent-cyan: #00d9ff;
+            --accent-purple: #b026ff;
+            --accent-pink: #ff2e97;
+            --accent-yellow: #ffd600;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --success: #00ff88;
+            --error: #ff4757;
+            --glow-cyan: rgba(0, 217, 255, 0.4);
+            --glow-purple: rgba(176, 38, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Animated background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, var(--glow-purple) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, var(--glow-cyan) 0%, transparent 50%),
+                var(--bg-dark);
+            z-index: -1;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(30deg); }
+        }
+
+        /* Header */
+        header {
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 2px solid var(--bg-light);
+            background: rgba(10, 14, 39, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: 'Space Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-light);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 10px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px var(--glow-cyan);
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            font-family: 'Space Mono', monospace;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Game container */
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Challenge card */
+        .challenge-card {
+            background: var(--bg-medium);
+            border: 2px solid var(--bg-light);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .challenge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .challenge-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+        }
+
+        .stats {
+            display: flex;
+            gap: 2rem;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-yellow);
+        }
+
+        /* Instructions */
+        .instructions {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--accent-purple);
+        }
+
+        .instructions h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent-purple);
+        }
+
+        .instructions p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Game panels */
+        .game-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .game-panels {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .panel:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px var(--glow-cyan);
+        }
+
+        .panel-header {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .icon-error { background: var(--error); }
+        .icon-target { background: var(--success); }
+
+        .prompt-editor {
+            width: 100%;
+            min-height: 150px;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            border: 2px solid var(--bg-medium);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.95rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .prompt-editor:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px var(--glow-cyan);
+        }
+
+        .output-display {
+            background: var(--bg-dark);
+            border: 2px solid var(--bg-medium);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 150px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: var(--text-primary);
+            box-shadow: 0 5px 20px var(--glow-purple);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--glow-purple);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-primary);
+            border: 2px solid var(--accent-cyan);
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Feedback */
+        .feedback {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            line-height: 1.6;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .feedback.success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 2px solid var(--success);
+            color: var(--success);
+        }
+
+        .feedback.error {
+            background: rgba(255, 71, 87, 0.1);
+            border: 2px solid var(--error);
+            color: var(--error);
+        }
+
+        .feedback h4 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+        }
+
+        /* Completion screen */
+        .completion-screen {
+            text-align: center;
+            padding: 3rem 2rem;
+            display: none;
+        }
+
+        .completion-screen.active {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        .trophy {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .final-score {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-yellow), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .share-section {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: var(--bg-medium);
+            border-radius: 12px;
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .share-btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .share-twitter {
+            background: #1DA1F2;
+            color: white;
+        }
+
+        .share-linkedin {
+            background: #0077B5;
+            color: white;
+        }
+
+        .share-reddit {
+            background: #FF4500;
+            color: white;
+        }
+
+        .share-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none;
+        }
+
+        /* Hint system */
+        .hint-button {
+            background: var(--bg-light);
+            color: var(--accent-yellow);
+            border: 2px solid var(--accent-yellow);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .hint-button:hover {
+            background: var(--accent-yellow);
+            color: var(--bg-dark);
+        }
+
+        .hint-content {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 214, 0, 0.1);
+            border-left: 4px solid var(--accent-yellow);
+            border-radius: 8px;
+            color: var(--accent-yellow);
+            display: none;
+        }
+
+        .hint-content.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    
+    <header>
+        <h1 class="logo">⚡ Prompt Debugger</h1>
+        <p class="tagline">Master AI prompting through interactive challenges</p>
+    </header>
+
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <div class="progress-text" id="progressText">Challenge 0 of 5</div>
+    </div>
+
+    <div class="game-container">
+        <div id="challengeArea">
+            <!-- Challenges will be injected here -->
+        </div>
+
+        <div class="completion-screen" id="completionScreen">
+            <div class="trophy">🏆</div>
+            <h2>Congratulations!</h2>
+            <div class="final-score" id="finalScore">0 points</div>
+            <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 1rem;">
+                You've completed all 5 challenges!
+            </p>
+            <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+                You're now better at crafting precise AI prompts. Want to level up even more? 
+                Join the waitlist for the full Prompt Engineering Game Platform with 50+ challenges, 
+                advanced techniques, and real-time AI feedback!
+            </p>
+            
+            <div class="share-section">
+                <h3 style="margin-bottom: 1rem;">Share Your Achievement!</h3>
+                <div class="share-buttons">
+                    <button class="share-btn share-twitter" onclick="shareToTwitter()">Share on Twitter</button>
+                    <button class="share-btn share-linkedin" onclick="shareToLinkedIn()">Share on LinkedIn</button>
+                    <button class="share-btn share-reddit" onclick="shareToReddit()">Share on Reddit</button>
+                </div>
+            </div>
+
+            <div class="button-group" style="margin-top: 2rem;">
+                <button class="btn btn-primary" onclick="restartGame()"><span>Play Again</span></button>
+                <button class="btn btn-secondary" onclick="alert('Waitlist feature coming soon!')"><span>Join Waitlist</span></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let currentChallenge = 0;
+        let totalScore = 0;
+        let editCount = 0;
+        let hintsUsed = 0;
+
+        // Challenge data
+        const challenges = [
+            {
+                title: "Challenge 1: Be Specific",
+                difficulty: "Beginner",
+                instructions: "The user wants a list of programming languages, but the AI gave a vague essay. Fix the prompt to get a clear, numbered list.",
+                flawedPrompt: "Tell me about programming languages.",
+                wrongOutput: "Programming languages are tools that developers use to write software. There are many types, including compiled and interpreted languages. They each have their own syntax and use cases. Some are better for web development, while others excel at system programming.",
+                targetOutput: "1. Python - General purpose, great for beginners\n2. JavaScript - Web development, frontend and backend\n3. Java - Enterprise applications, Android development\n4. C++ - System programming, game development\n5. Ruby - Web development, known for Ruby on Rails",
+                hint: "Add clear instructions about the format you want. Try asking for a 'numbered list' and specify how many items you want.",
+                solution: "List 5 programming languages with their primary use cases in a numbered list format.",
+                explanation: "The original prompt was too vague. By specifying the format (numbered list), quantity (5 languages), and what information to include (use cases), you get exactly what you need."
+            },
+            {
+                title: "Challenge 2: Define the Role",
+                difficulty: "Beginner",
+                instructions: "The AI gave a technical explanation when the user needed something simple for a child. Fix the prompt by defining who the AI should be.",
+                flawedPrompt: "Explain photosynthesis.",
+                wrongOutput: "Photosynthesis is a biochemical process in which plants, algae, and certain bacteria convert light energy into chemical energy. The process involves the absorption of photons by chlorophyll molecules in the chloroplasts, which then drives a series of electron transfer reactions that ultimately produce ATP and NADPH, which are used in the Calvin cycle to fix carbon dioxide into organic molecules.",
+                targetOutput: "Photosynthesis is like how plants eat! Just like you need food for energy, plants need energy too. They get it from sunlight! \n\nHere's how it works: Plants have special green parts in their leaves called chlorophyll. When sunlight hits the leaves, the plant uses that light, plus water from the ground and air from outside, to make its own food (a type of sugar). And guess what? As a bonus, plants make oxygen - the air we breathe! Pretty cool, right?",
+                hint: "Tell the AI who it should act as. Try 'You are a teacher explaining to a 7-year-old...'",
+                solution: "You are a kindergarten teacher. Explain photosynthesis to a 5-year-old child using simple words and fun comparisons.",
+                explanation: "Role definition is crucial! By telling the AI to act as a kindergarten teacher and specifying the audience (5-year-old), you get age-appropriate language and helpful comparisons."
+            },
+            {
+                title: "Challenge 3: Specify Constraints",
+                difficulty: "Beginner",
+                instructions: "The user needed a short response but got a long essay. Add constraints to control the length.",
+                flawedPrompt: "What is machine learning?",
+                wrongOutput: "Machine learning is a subset of artificial intelligence that focuses on the development of algorithms and statistical models that enable computer systems to improve their performance on a specific task through experience. Unlike traditional programming where developers explicitly code rules, machine learning systems learn patterns from data.\n\nThere are several types of machine learning: supervised learning, where the model learns from labeled data; unsupervised learning, where the model finds patterns in unlabeled data; and reinforcement learning, where an agent learns by interacting with an environment. Deep learning, a subset of machine learning, uses neural networks with multiple layers to process complex patterns.\n\nApplications of machine learning are everywhere in modern life, from recommendation systems on streaming platforms to fraud detection in banking, autonomous vehicles, natural language processing, and medical diagnosis systems.",
+                targetOutput: "Machine learning is a type of AI where computers learn from data to make predictions or decisions, without being explicitly programmed for every scenario.",
+                hint: "Add a word limit or ask for 'one sentence' or 'in 25 words or less'.",
+                solution: "What is machine learning? Explain in one sentence, maximum 25 words.",
+                explanation: "Without constraints, AI tends to be verbose. By specifying 'one sentence' and 'maximum 25 words', you get a concise, focused answer."
+            },
+            {
+                title: "Challenge 4: Request Format",
+                difficulty: "Beginner",
+                instructions: "The user wanted data in a table but got a paragraph. Specify the exact output format you need.",
+                flawedPrompt: "Compare cats and dogs as pets.",
+                wrongOutput: "Cats and dogs are both popular pets, but they have different characteristics. Dogs are generally more social and require more attention and exercise. They need to be walked regularly and enjoy playing fetch. Cats are more independent and can be left alone for longer periods. They use a litter box instead of needing walks. Dogs are often better for active families, while cats suit people with less time or smaller living spaces.",
+                targetOutput: "| Characteristic | Cats | Dogs |\n|---------------|------|------|\n| Social needs | Independent | High social needs |\n| Exercise | Low | Daily walks required |\n| Space needed | Small spaces OK | Needs more room |\n| Time commitment | Low-medium | Medium-high |\n| Training | Difficult | Responds well to training |",
+                hint: "Ask for a 'comparison table' or 'format as a table with columns'.",
+                solution: "Compare cats and dogs as pets. Format the response as a table with columns for Characteristic, Cats, and Dogs. Include 5 key differences.",
+                explanation: "When you need structured data, explicitly request the format. Saying 'format as a table' or 'create a comparison table' ensures you get organized, scannable information."
+            },
+            {
+                title: "Challenge 5: Avoid Ambiguity",
+                difficulty: "Beginner",
+                instructions: "The prompt is ambiguous - 'best' could mean many things. Make it specific and measurable.",
+                flawedPrompt: "What's the best smartphone?",
+                wrongOutput: "The iPhone 15 Pro Max is often considered one of the best smartphones available today.",
+                targetOutput: "For the best camera smartphone under $800 in 2024:\n\n1. Google Pixel 8 Pro ($899 - often on sale)\n   - Excellent computational photography\n   - Night Sight mode\n   - Magic Eraser feature\n\n2. Samsung Galaxy S24 ($799)\n   - 50MP main camera\n   - Great zoom capabilities\n   - Pro video features\n\n3. iPhone 15 ($799)\n   - Reliable color accuracy\n   - 4K video recording\n   - User-friendly camera app",
+                hint: "Define what 'best' means. Best for what? Camera? Battery? Price range? Specify your criteria.",
+                solution: "What's the best smartphone for photography under $800 in 2024? List top 3 options with specific camera features.",
+                explanation: "Ambiguous words like 'best' need definition. By specifying criteria (photography, under $800, 2024) and output format (top 3 with features), you get useful, relevant recommendations."
+            }
+        ];
+
+        // Initialize game
+        function initGame() {
+            loadChallenge(0);
+        }
+
+        // Load a challenge
+        function loadChallenge(index) {
+            if (index >= challenges.length) {
+                showCompletion();
+                return;
+            }
+
+            currentChallenge = index;
+            editCount = 0;
+            hintsUsed = 0;
+
+            const challenge = challenges[index];
+            const challengeArea = document.getElementById('challengeArea');
+            
+            challengeArea.innerHTML = `
+                <div class="challenge-card">
+                    <div class="challenge-header">
+                        <h2 class="challenge-title">${challenge.title}</h2>
+                        <div class="stats">
+                            <div class="stat">
+                                <span class="stat-label">Edits</span>
+                                <span class="stat-value" id="editCounter">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Score</span>
+                                <span class="stat-value" id="scoreCounter">${totalScore}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="instructions">
+                        <h3>🎯 Your Mission</h3>
+                        <p>${challenge.instructions}</p>
+                    </div>
+
+                    <div class="game-panels">
+                        <div class="panel">
+                            <div class="panel-header">
+                                <span class="panel-icon icon-error"></span>
+                                Current AI Output (Wrong)
+                            </div>
+                            <div class="output-display">${challenge.wrongOutput}</div>
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel-header">
+                                <span class="panel-icon icon-target"></span>
+                                Target Output (What You Want)
+                            </div>
+                            <div class="output-display">${challenge.targetOutput}</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">✏️ Edit the Prompt</div>
+                        <textarea 
+                            class="prompt-editor" 
+                            id="promptEditor"
+                            placeholder="Type your improved prompt here..."
+                        >${challenge.flawedPrompt}</textarea>
+                        
+                        <button class="hint-button" onclick="toggleHint()">💡 Need a hint?</button>
+                        <div class="hint-content" id="hintContent">
+                            <strong>Hint:</strong> ${challenge.hint}
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="checkSolution()">
+                            <span>Check Solution</span>
+                        </button>
+                        <button class="btn btn-secondary" onclick="skipChallenge()">
+                            <span>Skip Challenge</span>
+                        </button>
+                    </div>
+
+                    <div id="feedbackArea"></div>
+                </div>
+            `;
+
+            // Track edits
+            const editor = document.getElementById('promptEditor');
+            let lastValue = editor.value;
+            editor.addEventListener('input', () => {
+                if (editor.value !== lastValue) {
+                    editCount++;
+                    document.getElementById('editCounter').textContent = editCount;
+                    lastValue = editor.value;
+                }
+            });
+
+            updateProgress();
+        }
+
+        // Toggle hint
+        function toggleHint() {
+            const hintContent = document.getElementById('hintContent');
+            hintContent.classList.toggle('visible');
+            if (hintContent.classList.contains('visible') && hintsUsed === 0) {
+                hintsUsed = 1;
+            }
+        }
+
+        // Check solution
+        function checkSolution() {
+            const userPrompt = document.getElementById('promptEditor').value.trim().toLowerCase();
+            const challenge = challenges[currentChallenge];
+            const feedbackArea = document.getElementById('feedbackArea');
+
+            // Simple validation - check if key improvements were made
+            const improvements = {
+                0: ['list', 'number', '5'], // Challenge 1: needs format specification
+                1: ['teacher', 'child', '5-year', 'kindergarten', 'simple'], // Challenge 2: needs role
+                2: ['sentence', 'word', '25', 'brief', 'short'], // Challenge 3: needs constraints
+                3: ['table', 'column', 'format'], // Challenge 4: needs format
+                4: ['camera', 'photography', 'under', '$', 'price'] // Challenge 5: needs specificity
+            };
+
+            const requiredKeywords = improvements[currentChallenge];
+            const hasImprovements = requiredKeywords.some(keyword => userPrompt.includes(keyword));
+
+            // Calculate score
+            let score = 0;
+            if (hasImprovements) {
+                score = Math.max(100 - (editCount * 10) - (hintsUsed * 20), 10);
+                totalScore += score;
+
+                feedbackArea.innerHTML = `
+                    <div class="feedback success">
+                        <h4>🎉 Excellent Work!</h4>
+                        <p><strong>+${score} points</strong></p>
+                        <p>${challenge.explanation}</p>
+                        <p style="margin-top: 1rem;"><strong>Example solution:</strong> "${challenge.solution}"</p>
+                    </div>
+                `;
+
+                document.getElementById('scoreCounter').textContent = totalScore;
+
+                setTimeout(() => {
+                    loadChallenge(currentChallenge + 1);
+                }, 4000);
+            } else {
+                feedbackArea.innerHTML = `
+                    <div class="feedback error">
+                        <h4>Not quite there yet!</h4>
+                        <p>Your prompt is still missing some key improvements. Try the hint if you're stuck!</p>
+                        <p><strong>Tip:</strong> ${challenge.hint}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Skip challenge
+        function skipChallenge() {
+            const challenge = challenges[currentChallenge];
+            const feedbackArea = document.getElementById('feedbackArea');
+            
+            feedbackArea.innerHTML = `
+                <div class="feedback error">
+                    <h4>Challenge Skipped</h4>
+                    <p>${challenge.explanation}</p>
+                    <p style="margin-top: 1rem;"><strong>Example solution:</strong> "${challenge.solution}"</p>
+                </div>
+            `;
+
+            setTimeout(() => {
+                loadChallenge(currentChallenge + 1);
+            }, 3000);
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const progress = (currentChallenge / challenges.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `Challenge ${currentChallenge} of ${challenges.length}`;
+        }
+
+        // Show completion screen
+        function showCompletion() {
+            document.getElementById('challengeArea').classList.add('hidden');
+            document.getElementById('completionScreen').classList.add('active');
+            document.getElementById('finalScore').textContent = totalScore + ' points';
+            document.getElementById('progressFill').style.width = '100%';
+            document.getElementById('progressText').textContent = `Challenge ${challenges.length} of ${challenges.length} - Complete!`;
+        }
+
+        // Share functions
+        function shareToTwitter() {
+            const text = `I just scored ${totalScore} points on Prompt Debugger! 🎯 Learn AI prompting through interactive challenges.`;
+            const url = window.location.href;
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+        }
+
+        function shareToLinkedIn() {
+            const url = window.location.href;
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+        }
+
+        function shareToReddit() {
+            const title = `I scored ${totalScore} points learning AI prompting with Prompt Debugger!`;
+            const url = window.location.href;
+            window.open(`https://reddit.com/submit?title=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`, '_blank');
+        }
+
+        // Restart game
+        function restartGame() {
+            currentChallenge = 0;
+            totalScore = 0;
+            document.getElementById('completionScreen').classList.remove('active');
+            document.getElementById('challengeArea').classList.remove('hidden');
+            initGame();
+        }
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
